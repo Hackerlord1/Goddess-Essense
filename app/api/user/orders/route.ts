@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
             },
           },
         },
-        shippingAddress: true,
+        address: true,  // ✅ Changed from 'shippingAddress' to 'address'
       },
       orderBy: { createdAt: "desc" },
     });
@@ -62,14 +62,14 @@ export async function GET(request: NextRequest) {
         image: item.product?.images?.[0]?.url || null,
         productSlug: item.product?.slug || null,
       })),
-      shippingAddress: order.shippingAddress
+      shippingAddress: order.address  // ✅ Changed from 'order.shippingAddress' to 'order.address'
         ? {
-            firstName: order.shippingAddress.firstName,
-            lastName: order.shippingAddress.lastName,
-            street: order.shippingAddress.street,
-            city: order.shippingAddress.city,
-            state: order.shippingAddress.state,
-            zipCode: order.shippingAddress.zipCode,
+            firstName: order.address.firstName,
+            lastName: order.address.lastName,
+            street: order.address.street,
+            city: order.address.city,
+            state: order.address.state,
+            zipCode: order.address.zipCode,
           }
         : null,
     }));
