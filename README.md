@@ -50,3 +50,5 @@ A modern e-commerce platform for women's fashion built with Next.js 14, Prisma, 
 ```bash
 git clone https://github.com/Hackerlord1/Goddess-Essense.git
 cd Goddess-Essense
+
+just to refresh
