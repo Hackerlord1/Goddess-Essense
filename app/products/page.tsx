@@ -2,6 +2,7 @@
 
 import prisma from "@/lib/prisma";
 import AllProductsClient from "@/components/products/AllProductsClient";
+export const dynamic = 'force-dynamic';
 
 export default async function AllProductsPage() {
   // Fetch all active products

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import prisma from "@/lib/prisma";
 import ProductCard from "@/components/products/ProductCard";
+export const dynamic = 'force-dynamic';
 
 interface CategoryPageProps {
   params: {
