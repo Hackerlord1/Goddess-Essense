@@ -51,4 +51,3 @@ next-env.d.ts
 
 # OS
 Thumbs.db
-"@ | Out-File -FilePath .gitignore -Encoding UTF8
