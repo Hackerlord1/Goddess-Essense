@@ -5,6 +5,7 @@ import { Poppins, Playfair_Display, Dancing_Script } from "next/font/google";
 import "./globals.css";
 import AuthProvider from "@/components/providers/AuthProvider";
 import ClientLayout from "@/components/layout/ClientLayout";
+export const dynamic = 'force-dynamic';
 
 const poppins = Poppins({
   subsets: ["latin"],

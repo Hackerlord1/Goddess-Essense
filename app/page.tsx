@@ -4,6 +4,9 @@ import HeroSection from "@/components/home/HeroSection";
 import CategoryGrid from "@/components/home/CategoryGrid";
 import FeaturedProducts from "@/components/home/FeaturedProducts";
 import { Sparkles, Truck, RotateCcw, Shield } from "lucide-react";
+export const dynamic = 'force-dynamic';
+
+
 
 export default function Home() {
   return (
