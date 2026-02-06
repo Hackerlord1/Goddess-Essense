@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import prisma from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
+export const dynamic = 'force-dynamic';
 
 // GET - Get all addresses for user
 export async function GET(request: NextRequest) {
