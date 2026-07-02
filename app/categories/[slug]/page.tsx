@@ -7,13 +7,13 @@ import ProductCard from "@/components/products/ProductCard";
 export const dynamic = 'force-dynamic';
 
 interface CategoryPageProps {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 }
 
 export default async function CategoryPage({ params }: CategoryPageProps) {
-  const { slug } = params;
+  const { slug } = await params;
 
   // Special handling for "sale" category
   if (slug === "sale") {
@@ -259,9 +259,8 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   );
 }
 
-// Generate metadata
 export async function generateMetadata({ params }: CategoryPageProps) {
-  const { slug } = params;
+  const { slug } = await params;
 
   if (slug === "sale") {
     return {
