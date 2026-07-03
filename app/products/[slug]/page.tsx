@@ -3,16 +3,17 @@
 import { notFound } from "next/navigation";
 import prisma from "@/lib/prisma";
 import ProductDetails from "@/components/products/ProductDetails";
-export const dynamic = 'force-dynamic';
+
+export const dynamic = "force-dynamic";
 
 interface ProductPageProps {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
-  const { slug } = params;
+  const { slug } = await params;
 
   // Fetch product from database
   const product = await prisma.product.findUnique({
@@ -50,8 +51,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
 // Generate metadata
 export async function generateMetadata({ params }: ProductPageProps) {
+  const { slug } = await params;
+
   const product = await prisma.product.findUnique({
-    where: { slug: params.slug },
+    where: { slug },
     include: { category: true },
   });
 
