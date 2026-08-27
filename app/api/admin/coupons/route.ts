@@ -1,23 +1,15 @@
 // app/api/admin/coupons/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
 import prisma from "@/lib/prisma";
-import { authOptions } from "@/lib/auth";
+import { requireAdmin } from "@/lib/admin-guard";
 export const dynamic = 'force-dynamic';
-
-async function checkAdmin(email: string) {
-  const user = await prisma.user.findUnique({ where: { email } });
-  return user?.role === "ADMIN";
-}
 
 // GET - Get all coupons
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email || !(await checkAdmin(session.user.email))) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const guard = await requireAdmin();
+    if (!guard.ok) return guard.response;
 
     const { searchParams } = new URL(request.url);
     const couponId = searchParams.get("id");
@@ -98,10 +90,8 @@ export async function GET(request: NextRequest) {
 // POST - Create coupon
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email || !(await checkAdmin(session.user.email))) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const guard = await requireAdmin();
+    if (!guard.ok) return guard.response;
 
     const body = await request.json();
     const {
@@ -163,10 +153,8 @@ export async function POST(request: NextRequest) {
 // PATCH - Update coupon
 export async function PATCH(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email || !(await checkAdmin(session.user.email))) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const guard = await requireAdmin();
+    if (!guard.ok) return guard.response;
 
     const { searchParams } = new URL(request.url);
     const couponId = searchParams.get("id");
@@ -237,10 +225,8 @@ export async function PATCH(request: NextRequest) {
 // DELETE - Delete coupon
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email || !(await checkAdmin(session.user.email))) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const guard = await requireAdmin();
+    if (!guard.ok) return guard.response;
 
     const { searchParams } = new URL(request.url);
     const couponId = searchParams.get("id");

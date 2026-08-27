@@ -1,23 +1,15 @@
 // app/api/admin/payments/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
 import prisma from "@/lib/prisma";
-import { authOptions } from "@/lib/auth";
+import { requireAdmin } from "@/lib/admin-guard";
 export const dynamic = 'force-dynamic';
-
-async function checkAdmin(email: string) {
-  const user = await prisma.user.findUnique({ where: { email } });
-  return user?.role === "ADMIN";
-}
 
 // GET - Get all payments
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email || !(await checkAdmin(session.user.email))) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const guard = await requireAdmin();
+    if (!guard.ok) return guard.response;
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
@@ -112,10 +104,8 @@ export async function GET(request: NextRequest) {
 // PATCH - Process refund
 export async function PATCH(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email || !(await checkAdmin(session.user.email))) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const guard = await requireAdmin();
+    if (!guard.ok) return guard.response;
 
     const { searchParams } = new URL(request.url);
     const paymentId = searchParams.get("id");

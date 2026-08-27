@@ -1,18 +1,9 @@
 // app/api/admin/products/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
 import prisma from "@/lib/prisma";
-import { authOptions } from "@/lib/auth";
+import { requireAdmin } from "@/lib/admin-guard";
 export const dynamic = 'force-dynamic';
-
-// Helper to check admin
-async function checkAdmin(email: string) {
-  const user = await prisma.user.findUnique({
-    where: { email },
-  });
-  return user?.role === "ADMIN";
-}
 
 // Helper to generate SKU
 function generateProductSku(): string {
@@ -31,11 +22,8 @@ function generateVariantSku(productSku: string, size: string, color: string): st
 // GET - Get all products or single product
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.email || !(await checkAdmin(session.user.email))) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const guard = await requireAdmin();
+    if (!guard.ok) return guard.response;
 
     const { searchParams } = new URL(request.url);
     const productId = searchParams.get("id");
@@ -115,11 +103,8 @@ export async function GET(request: NextRequest) {
 // POST - Create new product with variants
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.email || !(await checkAdmin(session.user.email))) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const guard = await requireAdmin();
+    if (!guard.ok) return guard.response;
 
     const body = await request.json();
     const {
@@ -183,8 +168,8 @@ export async function POST(request: NextRequest) {
         name,
         slug,
         description: description || null,
-        price: parseFloat(price),
-        salePrice: salePrice ? parseFloat(salePrice) : null,
+        price: String(price),
+        salePrice: salePrice ? String(salePrice) : null,
         sku: productSku,
         categoryId,
         isActive: isActive ?? true,
@@ -234,11 +219,8 @@ export async function POST(request: NextRequest) {
 // PUT - Update product
 export async function PUT(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.email || !(await checkAdmin(session.user.email))) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const guard = await requireAdmin();
+    if (!guard.ok) return guard.response;
 
     const { searchParams } = new URL(request.url);
     const productId = searchParams.get("id");
@@ -279,52 +261,54 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    // Delete existing images and variants
-    await prisma.productImage.deleteMany({ where: { productId } });
-    await prisma.productVariant.deleteMany({ where: { productId } });
+    // Replace images/variants and update the product atomically, so a failure
+    // partway through can't leave the product with its images/variants deleted.
+    const product = await prisma.$transaction(async (tx) => {
+      await tx.productImage.deleteMany({ where: { productId } });
+      await tx.productVariant.deleteMany({ where: { productId } });
 
-    // Update product
-    const product = await prisma.product.update({
-      where: { id: productId },
-      data: {
-        name,
-        slug,
-        description: description || null,
-        price: parseFloat(price),
-        salePrice: salePrice ? parseFloat(salePrice) : null,
-        categoryId,
-        isActive,
-        isFeatured,
-        isNewArrival,
-        isBestSeller,
-        isOnSale,
-        // Recreate images
-        images: {
-          create: (images || []).map((img: { url: string; alt?: string }, index: number) => ({
-            url: img.url,
-            alt: img.alt || name,
-            isPrimary: index === 0,
-            sortOrder: index,
-          })),
+      return tx.product.update({
+        where: { id: productId },
+        data: {
+          name,
+          slug,
+          description: description || null,
+          price: String(price),
+          salePrice: salePrice ? String(salePrice) : null,
+          categoryId,
+          isActive,
+          isFeatured,
+          isNewArrival,
+          isBestSeller,
+          isOnSale,
+          // Recreate images
+          images: {
+            create: (images || []).map((img: { url: string; alt?: string }, index: number) => ({
+              url: img.url,
+              alt: img.alt || name,
+              isPrimary: index === 0,
+              sortOrder: index,
+            })),
+          },
+          // Recreate variants
+          variants: {
+            create: selectedSizes.flatMap((size: string) =>
+              selectedColors.map((color: { name: string; hex: string }) => ({
+                size,
+                color: color.name,
+                colorHex: color.hex,
+                stock: variantStock?.[`${size}-${color.name}`] || 0,
+                sku: generateVariantSku(currentProduct.sku, size, color.name),
+              }))
+            ),
+          },
         },
-        // Recreate variants
-        variants: {
-          create: selectedSizes.flatMap((size: string) =>
-            selectedColors.map((color: { name: string; hex: string }) => ({
-              size,
-              color: color.name,
-              colorHex: color.hex,
-              stock: variantStock?.[`${size}-${color.name}`] || 0,
-              sku: generateVariantSku(currentProduct.sku, size, color.name),
-            }))
-          ),
+        include: {
+          images: true,
+          variants: true,
+          category: true,
         },
-      },
-      include: {
-        images: true,
-        variants: true,
-        category: true,
-      },
+      });
     });
 
     return NextResponse.json({ product });
@@ -340,11 +324,8 @@ export async function PUT(request: NextRequest) {
 // PATCH - Toggle product status
 export async function PATCH(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.email || !(await checkAdmin(session.user.email))) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const guard = await requireAdmin();
+    if (!guard.ok) return guard.response;
 
     const { searchParams } = new URL(request.url);
     const productId = searchParams.get("id");
@@ -377,11 +358,8 @@ export async function PATCH(request: NextRequest) {
 // DELETE - Delete product
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.email || !(await checkAdmin(session.user.email))) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const guard = await requireAdmin();
+    if (!guard.ok) return guard.response;
 
     const { searchParams } = new URL(request.url);
     const productId = searchParams.get("id");
